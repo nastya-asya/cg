@@ -1,0 +1,240 @@
+<HTML>
+<BODY>
+
+<canvas id='lab07' width='400px' height='400px' style='border:1px solid black'>
+</canvas>
+
+<script>
+    function Line(ctx, x_start, y_start, x_end, y_end, color)
+    {
+        ctx.fillStyle=color;
+        let dmax=Math.max(Math.abs(x_end-x_start), Math.abs(y_end-y_start));
+        let dmin=Math.min(Math.abs(x_end-x_start), Math.abs(y_end-y_start));
+        let xdir=1;
+        if (x_end<x_start) xdir=-1;
+        let ydir=1;
+        if (y_end<y_start) ydir=-1;
+        let eps=0;
+        let s=1;
+        let k=2*dmin;
+        if (Math.abs(y_end-y_start)<=Math.abs(x_end-x_start))
+        {
+            let y=y_start;
+            for (let x=x_start; x*xdir<=x_end*xdir; x+=xdir)
+            {
+                ctx.fillRect(x*s, y*s, s, s);
+                eps=eps+k;
+                if (eps>dmax)
+                {
+                    y+=ydir;
+                    eps=eps-2*dmax;
+                }
+            }
+        }
+        else
+        {
+            let x=x_start;
+            for (let y=y_start; y*ydir<=y_end*ydir; y+=ydir)
+            {
+                ctx.fillRect(x*s, y*s, s, s);
+                eps=eps+k;
+                if (eps>dmax)
+                {
+                    x+=xdir;
+                    eps=eps-2*dmax;
+                }
+            }
+        }
+    }
+
+    function BezierCurve(f0, f1, f2)
+    {
+        let k=(f2[1]-f0[1])/(f2[0]-f0[0]);
+        console.log('Coefficient', k);
+        let b=-1*k*f0[0]+f0[1];
+        let d=Math.abs(-k*f1[0]+f1[1]-1*b)/Math.sqrt(k*k+1);
+        console.log('Distance ',d);
+
+        if(d>1)
+        {
+            f0_=[];
+            f0_[0]=0.5*f0[0]+0.5*f1[0];
+            f0_[1]=0.5*f0[1]+0.5*f1[1];
+            f1_=[];
+            f1_[0]=0.5*f1[0]+0.5*f2[0];
+            f1_[1]=0.5*f1[1]+0.5*f2[1];
+            f0__=[];
+            f0__[0]=0.5*f0_[0]+0.5*f1_[0];
+            f0__[1]=0.5*f0_[1]+0.5*f1_[1];
+            Line(ctx, f0_[0], f0_[1], f1_[0], f1_[1])
+            BezierCurve(f0, f0_, f0__);
+        }
+        else
+        {
+            Line(ctx, f0_[0], f0_[1], f1_[0], f1_[1]);
+        }
+        if(d>1)
+        {
+            f0_=[];
+            f0_[0]=0.5*f0[0]+0.5*f1[0];
+            f0_[1]=0.5*f0[1]+0.5*f1[1];
+            f1_=[];
+            f1_[0]=0.5*f1[0]+0.5*f2[0];
+            f1_[1]=0.5*f1[1]+0.5*f2[1];
+            f0__=[];
+            f0__[0]=0.5*f0_[0]+0.5*f1_[0];
+            f0__[1]=0.5*f0_[1]+0.5*f1_[1];
+            Line(ctx, f0_[0], f0_[1], f1_[0], f1_[1])
+            BezierCurve(f0__, f1_, f2);
+        }
+        else
+        {
+            Line(ctx, f0_[0], f0_[1], f1_[0], f1_[1]);
+        }
+    }
+
+    function Mult_Mv(M,v)
+    {
+        var res=[];
+        for (var i=0; i<4; ++i)
+        {
+            res.push(0);
+            for (var j=0; j<4; ++j)
+            {
+                res[i]=res[i]+M[i*4+j]*v[j];
+            }
+        }
+        return res
+    }
+</script>
+
+<script>
+    let canvas = document.getElementById("lab07");
+    let ctx = canvas.getContext("2d");
+    ctx.fillStyle='#8c0134';
+    canvas.setAttribute("tabindex", 0);
+    let x=0;
+    let y=0;
+    let points=[];
+    let counter=0;
+
+    canvas.addEventListener("click", function(event)
+    {
+        x=event.offsetX
+        y=event.offsetY
+        if (counter<3)
+        {
+            points.push([x, y, 0]);
+            ctx.fillRect(x, y, 2, 2);
+            counter++;
+        }
+        else
+        {
+            alert("Press 'x', 'y' or 'z' key")
+        }
+    })
+    var mode
+    canvas.addEventListener('keydown', function(e)
+    {
+        mode=e.key
+        if (!((mode==='x') | (mode==='y') | (mode==='z')))
+        {
+            mode='x'
+        }
+        f0=points[0];
+        f1=points[1];
+        f2=points[2];
+
+        BezierCurve(f0, f1, f2);
+        var f0_=[];
+        var f2_=[];
+        f0_[0]=f0[0];
+        f0_[1]=f0[1];
+        f0_[2]=f0[2];
+        f2_[0]=f2[0];
+        f2_[1]=f2[1];
+        f2_[2]=f2[2];
+        for(var i=0; i<360; i+=10)
+        {
+            var alpha=i*Math.PI/180;
+            f0_[0]-=f1[0];
+            f0_[1]-=f1[1];
+            f0_[2]-=f1[2];
+            f2_[0]-=f1[0];
+            f2_[1]-=f1[1];
+            f2_[2]-=f1[2];
+
+            var M_x=[ 1, 0, 0, 0,
+                0, Math.cos(alpha), -1*Math.sin(alpha), 0,
+                0, Math.sin(alpha), Math.cos(alpha), 0,
+                0, 0, 0, 1];
+
+            var M_y=[ Math.sin(alpha), 0, Math.cos(alpha), 0,
+                0, 1, 0, 0,
+                Math.cos(alpha), 0, -1*Math.sin(alpha), 0,
+                0, 0, 0, 1];
+
+            var M_z=[ Math.cos(alpha), -1*Math.sin(alpha), 0, 0,
+                Math.sin(alpha), Math.cos(alpha), 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 1];
+
+            if (mode==='x')
+            {
+                var out=Mult_Mv(M_x, [f0_[0], f0_[1], f0_[2], 1]);
+                f0_[0]=out[0]+f1[0];
+                f0_[1]=out[1]+f1[1];
+                out=Mult_Mv(M_x, [f2_[0], f2_[1], f2_[2], 1]);
+                f2_[0]=out[0]+f1[0];
+                f2_[1]=out[1]+f1[1];
+
+                BezierCurve(f0_, f1, f2_);
+                f0_[0]=f0[0];
+                f0_[1]=f0[1];
+                f0_[2]=f0[2];
+                f2_[0]=f2[0];
+                f2_[1]=f2[1];
+                f2_[2]=f2[2];
+            }
+            else if(mode==='y')
+            {
+                var out=Mult_Mv(M_y, [f0_[0], f0_[1], f0_[2], 1]);
+                f0_[0]=out[0]+f1[0];
+                f0_[1]=out[1]+f1[1];
+                out=Mult_Mv(M_y, [f2_[0], f2_[1], f2_[2], 1]);
+                f2_[0]=out[0]+f1[0];
+                f2_[1]=out[1]+f1[1];
+
+                BezierCurve(f0_, f1, f2_);
+                f0_[0]=f0[0];
+                f0_[1]=f0[1];
+                f0_[2]=f0[2];
+                f2_[0]=f2[0];
+                f2_[1]=f2[1];
+                f2_[2]=f2[2];
+            }
+            else if(mode==='z')
+            {
+                var out=Mult_Mv(M_z, [f0_[0], f0_[1], f0_[2], 1]);
+                f0_[0]=out[0]+f1[0];
+                f0_[1]=out[1]+f1[1];
+                out=Mult_Mv(M_z, [f2_[0], f2_[1], f2_[2], 1]);
+                f2_[0]=out[0]+f1[0];
+                f2_[1]=out[1]+f1[1];
+
+                BezierCurve(f0_, f1, f2_);
+                f0_[0]=f0[0];
+                f0_[1]=f0[1];
+                f0_[2]=f0[2];
+                f2_[0]=f2[0];
+                f2_[1]=f2[1];
+                f2_[2]=f2[2];
+            }
+        }
+        counter=0;
+        points=[];
+    })
+</script>
+
+</BODY>
+</HTML>

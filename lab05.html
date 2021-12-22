@@ -1,0 +1,149 @@
+<HTML>
+<BODY>
+
+<canvas id='lab05' width='400px' height='400px' style='border: 1px solid black'>
+</canvas>
+
+<script>
+  function Line(ctx, x_start, y_start, x_end, y_end, color)
+  {
+      ctx.fillStyle = color;
+      let dmax=Math.max(Math.abs(x_end-x_start), Math.abs(y_end-y_start));
+      let dmin=Math.min(Math.abs(x_end-x_start), Math.abs(y_end-y_start));
+      let xdir=1;
+      if (x_end<x_start) xdir=-1;
+      let ydir=1;
+      if (y_end<y_start) ydir=-1;
+      let eps=0;
+      let s=1;
+      let k=2*dmin;
+      if (Math.abs(y_end-y_start)<=Math.abs(x_end-x_start))
+      {
+          let y=y_start;
+          for (let x=x_start; x*xdir<=x_end*xdir; x+=xdir)
+          {
+               ctx.fillRect(x*s, y*s, s, s);
+               eps=eps+k;
+               if (eps>dmax)
+               {
+                    y+=ydir;
+                    eps=eps-2*dmax;
+               }
+          }
+      }
+      else
+      {
+           let x=x_start;
+           for (let y=y_start; y*ydir<=y_end*ydir; y+=ydir)
+           {
+                ctx.fillRect(x*s, y*s, s, s);
+                eps=eps+k;
+                if (eps>dmax)
+                {
+                     x+=xdir;
+                     eps=eps-2*dmax;
+                }
+           }
+      }
+  }
+
+  class Point
+  {
+       constructor(x, y)
+       {
+            this.x=x;
+            this.y=y;
+       }
+  }
+
+  function FillPolygon(context, vert)
+  {
+       let miny=vert[0].y, maxy=vert[0].y;
+       for (let i=0; i<vert.length; ++i)
+       {
+            if (vert[i].y<miny) miny=vert[i].y;
+            if (vert[i].y>maxy) maxy=vert[i].y;
+       }
+
+       let y_array=[];
+       for (let i=0; i<vert.length; ++i)
+       {
+            let p=0;
+            if (i!==vert.length-1) p=i+1;
+            let hi=0, lo=0;
+            if (vert[i].y>vert[p].y) {hi=i; lo=p;}
+            else if (vert[i].y<vert[p].y) {hi=p; lo=i;}
+            else continue
+
+         let k=(vert[hi].y-vert[lo].y)/(vert[hi].x-vert[lo].x);
+            for (let j=vert[lo].y; j<vert[hi].y; ++j)
+            {
+                 if (typeof y_array[j]=="undefined") y_array[j]=[];
+                 y_array[j].push((j-vert[lo].y)/k+vert[lo].x)
+            }
+       }
+
+       for (let y=miny; y<maxy; ++y)
+       {
+            let x_array=y_array[y].sort(function(a, b) { return a-b });
+            for (let j=0; j<x_array.length/2; ++j)
+            {
+                 for (let x=x_array[j*2]; x<x_array[j*2+1]; ++x)
+                 {
+                      ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+                 }
+            }
+       }
+  }
+
+  let canvas=document.getElementById("lab05");
+  let ctx=canvas.getContext("2d");
+  ctx.fillStyle='#8c0134';
+  let state=0;
+  let polygon_start_x_tmp, polygon_start_y_tmp;
+  let polygon_start_x, polygon_start_y;
+  let polygon_end_x, polygon_end_y;
+  let vertices=[];
+
+  canvas.addEventListener("click", function (event)
+  {
+       if (state===0)
+       {
+            vertices.push(new Point(event.offsetX, event.offsetY));
+            ctx.fillRect(event.offsetX, event.offsetY, 2, 2);
+            polygon_start_x_tmp=event.offsetX;
+            polygon_start_y_tmp=event.offsetY;
+            polygon_start_x=event.offsetX;
+            polygon_start_y=event.offsetY;
+            state=1;
+       }
+       else if (state===1)
+       {
+            polygon_end_x=event.offsetX;
+            polygon_end_y=event.offsetY;
+            Line(ctx, polygon_start_x_tmp, polygon_start_y_tmp, polygon_end_x, polygon_end_y);
+            polygon_start_x_tmp=event.offsetX;
+            polygon_start_y_tmp=event.offsetY;
+            vertices.push(new Point(event.offsetX, event.offsetY));
+            state=1;
+       }
+       if (state===2)
+       {
+            FillPolygon(ctx, vertices);
+            vertices=[];
+       }
+  })
+
+  canvas.addEventListener("contextmenu", function ()
+  {
+       if (state===1)
+       {
+            Line(ctx, polygon_start_x_tmp, polygon_start_y_tmp, polygon_start_x, polygon_start_y);
+            state=2;
+            console.log(state)
+       }
+  })
+</script>
+
+</BODY>
+</HTML>

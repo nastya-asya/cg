@@ -1,0 +1,247 @@
+<HTML>
+<BODY>
+
+<canvas id='lab08' width='120px' height='120px' style='border:3px solid black'>
+</canvas>
+
+<script>
+    function color3dPlane(L, parray, color)
+    {
+        console.log(parray);
+        n=parray.length;
+        console.log(n);
+        var P1={ x: parray[1].x-parray[0].x,
+                 y: parray[1].y-parray[0].y,
+                 z: parray[1].z-parray[0].z};
+        var P13={ x: parray[n-1].x-parray[0].x,
+                  y: parray[n-1].y-parray[0].y,
+                  z: parray[n-1].z-parray[0].z};
+        var ny=(P12.z*P13.x-P13.z*P12.x)/(P13.y*P12.x-P12.y*P13.x);
+        var N={x: -1*(ny*P12.y+P12.z)/P12.x, y: ny, z:1};
+        console.log(N);
+        var S={x: parray[0].x-L.x, y: parray[0].y-L.y, z: parray[0].z-L.z};
+        var cosa=(N.x*S.x+N.y*S.y+N.z*S.z)/Math.sqrt(N.x*N.x+N.y*N.y+N.z*N.z)/Math.sqrt(S.x*S.x+S.y*S.y+S.z*S.z);
+        console.log("cos(a)="+cosa);
+
+        console.log("color:"+((color&0xff0000)>>16)+" "
+            +((color&0x00ff00)>>8)+" "+(color&0x0000ff));
+        var R=Math.round(((color&0xff0000)>>16)*Math.abs(cosa))<<16;
+        var G=Math.round(((color&0x00ff00)>>8)*Math.abs(cosa))<<8;
+        var B=Math.round(((color&0x0000ff))*Math.abs(cosa));
+        console.log("R:"+R);
+        console.log("G:"+G);
+        console.log("B:"+B);
+        console.log("RGB:"+(R>>16)+" "+(G>>8)+" "+B);
+        var tarray=[parray[0].x, parray[0].y, parray[1].x, parray[1].y, parray[2].x, parray[2].y];
+        console.log(tarray);
+        borderFillColor(ctx, tarray, Math.round(R|G|B));
+    }
+
+    function Line(ctx, x_start, y_start, x_end, y_end, color)
+    {
+        ctx.fillStyle=color;
+        let dmax=Math.max(Math.abs(x_end - x_start), Math.abs(y_end - y_start));
+        let dmin=Math.min(Math.abs(x_end - x_start), Math.abs(y_end - y_start));
+        let xdir=1;
+        if (x_end<x_start) xdir=-1;
+        let ydir=1;
+        if (y_end<y_start) ydir=-1;
+        let eps=0;
+        let s=1;
+        let k=2*dmin;
+        if (Math.abs(y_end-y_start)<=Math.abs(x_end-x_start))
+        {
+            let y=y_start;
+            for (let x=x_start; x*xdir<=x_end*xdir; x+=xdir)
+            {
+                ctx.fillRect(x*s, y*s, s, s);
+                eps=eps+k;
+                if (eps>dmax)
+                {
+                    y+=ydir;
+                    eps=eps-2*dmax;
+                }
+            }
+        }
+        else
+        {
+            let x=x_start;
+            for (let y=y_start; y*ydir<=y_end*ydir; y+=ydir)
+            {
+                ctx.fillRect(x*s, y*s, s, s);
+                eps=eps+k;
+                if (eps>dmax)
+                {
+                    x+=xdir;
+                    eps=eps-2*dmax;
+                }
+            }
+        }
+    }
+
+    function borderFillColor(ctx, poly, color)
+    {
+        console.log("borderFillColor:"+ poly);
+        var bpoints=[];
+        maxy=0; miny=h;
+        var n=poly.length/2;
+        console.log("n="+n);
+        for (var i=0; i<poly.length; i++) {
+            if (Math.round(poly[2*i+1])>maxy) maxy=Math.round(poly[2*i+1]);
+            if (Math.round(poly[2*i+1])<miny) miny=Math.round(poly[2*i+1]);
+        }
+        console.log("maxmin "+maxy+" "+miny);
+        var idata=ctx.getImageData(0,0,w,h);
+        var x0=poly[2*n-2], y0=poly[2*n-1];
+        var x1=poly[0], y1=poly[1];
+        console.log(x0+","+y0+"; "+x1+","+y1);
+        var k=0;
+        if (x1-x0!==0)
+        {
+            k=(y1-y0)/(x1-x0);
+        }
+        var b=y0-k*x0;
+        var up=y0, down=y1;
+        if (y1<y0)
+        {
+            up=y1;
+            down=y0;
+        }
+        var sign=(y1-y0)/Math.abs(y1-y0);
+        for (var j=Math.round(up); j<=Math.round(down); j+=1)
+        {
+            if (! Array.isArray(bpoints[j]) )
+            {
+                bpoints[j]=[];
+            }
+            if (k!==0)
+            {
+                bpoints[j].push(Math.round((j-b)/k));
+            }
+            else
+            {
+                bpoints[j].push(x0);
+            }
+            console.log(bpoints[j]);
+        }
+        var min=Math.min(y0, y1);
+        if (! Array.isArray(bpoints[min]) )
+        {
+            bpoints[min]=[];
+        }
+        if (k!==0)
+        {
+            bpoints[min].push(Math.round((min-b)/k ));
+        }
+        else
+        {
+            bpoints[min].push(x0);
+        }
+        for (var i=1; i<n; i++)
+        {
+            x0=poly[2*i];
+            y0=poly[2*i+1];
+            x1=poly[2*i-2];
+            y1=poly[2*i-1];
+            if (x1-x0!== 0)
+            {
+                k=(y1-y0)/(x1-x0);
+            }
+            else
+            {
+                k=0;
+            }
+            b=y0-k*x0;
+            sign=(y1-y0)/Math.abs(y1-y0);
+            up=y0; down=y1;
+            if (y1<y0) { up=y1; down=y0; }
+            for (var j=Math.round(up); j<=Math.round(down); j+=1)
+            {
+                if (! Array.isArray(bpoints[j]) )
+                {
+                    bpoints[j]=[];
+                }
+                if (k!==0)
+                {
+                    bpoints[j].push(Math.round((j-b)/k));
+                }
+                else
+                {
+                    bpoints[j].push(x0);
+                }
+                console.log(bpoints[j]);
+            }
+            min=Math.min(y0, y1);
+            if (! Array.isArray(bpoints[min]) )
+            {
+                bpoints[min]=[];
+            }
+            bpoints[min].push( Math.round((min-b)/k));
+        }
+        console.log(bpoints)
+        console.log("maxmin1 "+maxy+" "+miny);
+        for (var ti=miny; ti<=maxy; ti++)
+        {
+            console.log("final "+bpoints[ti])
+            if (! Array.isArray(bpoints[ti]) )
+            {
+                continue
+            }
+            var xarray=bpoints[ti].sort(function(a, b){return a-b;});
+            var size=xarray.length;
+            for (var k=0; k<size/2; k++)
+            {
+                console.log("line");
+                for (var tj=xarray[k*2]+1; tj<=xarray[k*2+1]; tj++)
+                {
+                    idata.data[(ti*w+tj)*4]=(color&0xff0000)>>16;
+                    idata.data[(ti*w+tj)*4+1]=(color&0x00ff00)>>8;
+                    idata.data[(ti*w+tj)*4+2]=color&0x0000ff;
+                    idata.data[(ti*w+tj)*4+3]=255;
+                }
+            }
+        }
+        console.log(color&0x0000ff);
+        ctx.putImageData(idata, 0, 0);
+    }
+</script>
+
+<script>
+    var canvas=document.getElementById("lab08");
+    canvas.oncontextmenu=function() { return false; }
+    var ctx=canvas.getContext("2d", {antialias:false,depth: false});
+    var n=0;
+    var w=canvas.width, h=canvas.height;
+    var maxy=0, miny=canvas.height;
+
+    var L={x:200, y:120, z:600};
+    var Pv={x:60, y:55, z:20};
+    var color=0x9966cc;
+    var alpha=0;
+    var radius=150;
+    setInterval(function ()
+    {
+        alpha+=.1;
+        L.x=radius*Math.cos(alpha);
+        L.y=radius*Math.sin(alpha)+40;
+        color3dPlane(L,
+            [{x:10, y:10, z:0}, Pv,
+                {x:10, y:100, z:0}],
+            color);
+        color3dPlane(L,
+            [{x:110, y:100, z:0}, Pv,
+                {x:10, y:100, z:0}],
+            color);
+        color3dPlane(L,
+            [{x:110, y:100, z:0}, Pv,
+                {x:110, y:10, z:0}],
+            color);
+        color3dPlane(L,
+            [{x:110, y:10, z:10}, Pv,
+                {x:10, y:10, z:0}],
+            color);
+    }, 200);
+</script>
+
+</BODY>
+</HTML>

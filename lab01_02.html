@@ -1,0 +1,116 @@
+<HTML>
+<BODY>
+
+<canvas id='lab01_02' width='600px' height='600px' style='border:1px solid black'>
+</canvas>
+
+<script>
+     function sign(x0, x1)
+     {
+        return (x1-x0)/Math.abs(x1-x0);
+     }
+     function is_need_replacing(x0, y0, x1, y1)
+     {
+         var angle=Math.asin(Math.abs(y0-y1)/Math.sqrt((x0-x1)*(x0-x1)+(y0-y1)*(y0-y1)))*180/Math.PI;
+         if (angle>45 && angle<=90)
+             return true;
+     }
+
+     function bresenham_line(x_begin, y_begin, x_end, y_end, color)
+     {
+         ctx.fillStyle=color;
+         var E=0;
+         var x=x_begin;
+         var y=y_begin;
+         if (is_need_replacing(x_begin, y_begin, x_end, y_end))
+         {
+             while (y!==y_end)
+             {
+                 E=E+2*(x_end-x_begin);
+                 if (Math.abs(E)<Math.abs((y_end-y_begin)))
+                 {
+                     ctx.fillRect(x, y, 1, 1);
+                 }
+                 else
+                 {
+                     x=x+sign(x_begin, x_end);
+                     E=E-2*(y_end-y_begin)*sign(x_begin, x_end)*sign(x_begin, y_end);
+                     ctx.fillRect(x, y, 1, 1);
+                 }
+                 y=y+sign(y_begin, y_end);
+             }
+             return
+         }
+         while (x!==x_end)
+         {
+             E=E+2*(y_end-y_begin);
+             if (Math.abs(E)<Math.abs((x_end-x_begin)))
+             {
+                 ctx.fillRect(x, y, 1, 1);
+             }
+             else
+             {
+                 y=y+sign(y_begin, y_end);
+                 E=E-2*(x_end-x_begin)*sign(y_begin, y_end)*sign(x_begin, x_end);
+                 ctx.fillRect(x, y, 1, 1);
+             }
+             x=x+sign(x_begin, x_end);
+         }
+     }
+
+     function draw_bresenham_circle(x_center, y_center, radius, color)
+     {
+         ctx.fillStyle=color;
+         var disp_x=x_center;
+         var disp_y=y_center;
+         x_center=0;
+         y_center=radius;
+         var delta=(1-2*radius);
+         var error=0;
+         while (y_center>=0)
+         {
+             ctx.fillRect(disp_x+x_center, disp_y+y_center, 1, 1);
+             ctx.fillRect(disp_x+x_center, disp_y-y_center, 1, 1);
+             ctx.fillRect(disp_x-x_center, disp_y+y_center, 1, 1);
+             ctx.fillRect(disp_x-x_center, disp_y-y_center, 1, 1);
+
+             error=2*(delta+y_center)-1;
+             if ((delta<0) && (error<=0))
+             {
+                 x_center+=1;
+                 delta=delta+(2*x_center+1);
+                 continue
+             }
+             error=2*(delta-x_center)-1;
+             if ((delta>0) && (error>0))
+             {
+                 y_center-=1;
+                 delta=delta+(1-2*y_center);
+                 continue
+             }
+             x_center+=1;
+             delta=delta+(2*(x_center-y_center));
+             y_center-=1
+         }
+     }
+
+     function clock(x_begin, y_begin, radius)
+     {
+         var angle=Math.floor(Date.now()%60000/1000)*6+90;
+         var y_end=Math.floor(Math.abs(radius*Math.sin(angle*Math.PI/180)-y_begin));
+         var x_end=Math.floor(Math.abs(radius*Math.cos(angle*Math.PI/180)-x_begin));
+         bresenham_line(x_begin, y_begin, x_end, y_end, '#000000');
+         setTimeout(bresenham_line, 1000, x_begin, y_begin, x_end, y_end, '#ffffff')
+     }
+</script>
+
+<script>
+    var canvas=document.getElementById('lab01_02');
+    var ctx=canvas.getContext('2d');
+    var radius=200, x_begin=300, y_begin=300;
+    draw_bresenham_circle(x_begin, y_begin, radius, "#000000")
+    setInterval(clock, 1000, x_begin, y_begin, radius);
+</script>
+
+</BODY>
+</HTML>
